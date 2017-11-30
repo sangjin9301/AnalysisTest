@@ -125,22 +125,22 @@ object Test {
 
 
   def main(args: Array[String]): Unit = {
-    cdrEvaluation
-    locationEvaluation
+//    cdrEvaluation
+//    locationEvaluation
+        var locationPath:String = this.getClass.getResource(".").getPath.replace("src", "location")
+        var callLogPath:String = this.getClass.getResource(".").getPath.replace("src", "calllog")
+        println(locationPath)
+        println(callLogPath)
+
+        var cr = new CSVReader
+        var dp = new DataProcessor
+
+        cr.read(callLogPath+"CallLog.csv")
+        cr.read(locationPath+"Location.csv")
+
+        dp.mkStolenLocationData(cr.user)
+        dp.mkStolenCallLogData(cr.user)
   }
 }
 
 
-//    var locationPath:String = this.getClass.getResource(".").getPath.replace("src", "location")
-//    var callLogPath:String = this.getClass.getResource(".").getPath.replace("src", "calllog")
-//    println(locationPath)
-//    println(callLogPath)
-//    var cr = new CSVReader
-//    var dp = new DataProcessor
-//
-////    cr.read(callLogPath+"CallLog.csv")
-////
-////    cr.read(locationPath+"Location.csv")
-//
-////    dp.mkStolenLocationData(cr.user)
-//    dp.mkStolenCallLogData(cr.user)

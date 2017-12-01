@@ -1,6 +1,8 @@
 package src
 
 import java.io.{BufferedReader, FileReader}
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 import org.apache.commons.io.LineIterator
 
@@ -8,160 +10,92 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class CompareLocation {
-  def excute(path: String, reqTime: Double, baseTime: Double): (Boolean,Double) = {
+
+  def excute(path: String, reqTime: Double, baseTime: Double): (Boolean, Double) = {
+    var st = new StatisticsRule
+    var reqMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
+    var baseMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
+    var LineList = this.getData(path)
+    var locationArr = this.ArrayToLocation(LineList)
+
+    //Map initialize
+    for (i <- 1 to 7) {
+      reqMap_List(i) = new mutable.HashMap[(Double, Double), Int]
+    }
+
+    locationArr.foreach(loc => {
+      var value = reqMap_List(loc.getWeek).get((loc.getX,loc.getY)).get+1
+      reqMap_List(loc.getWeek).put((loc.getX,loc.getY),value)
+    })
+
+    //    mkRequest(locationArr, reqTime, reqMap_List)
+    //    mkBase(locationArr, reqTime, baseTime, baseMap_List)
+
+  }
+
+  def mkRequest(locList: ArrayBuffer[Location], reqTime: Double, reqMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
+    var lastDate = locList.last.getDate
+    var term = lastDate - reqTime
+    for (target <- locList) {
+      if ((target.getDate < lastDate) && (target.getDate > term)) {
+        var increase: Int = reqMap_List.get((target.getX, target.getY)).get + 1
+        reqMap_List.put((target.getX, target.getY), increase)
+      }
+    }
+  }
+
+  def mkBase(locList: ArrayBuffer[Location], reqTime: Double, baseTime: Double, baseMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
+    var lastDate = locList.last.getDate
+    var term = lastDate - reqTime
+    for (target <- locList) {
+      if ((target.getDate < term)) {
+      }
+    }
+  }
+
+  def getData(path: String): ArrayBuffer[Array[String]] = {
+    var LineList = new ArrayBuffer[Array[String]]
     var bufReader: BufferedReader = null
     bufReader = new BufferedReader(new FileReader(path))
-    var st = new StatisticsRule
     val iter = new LineIterator(bufReader)
-    var reqMap = new mutable.HashMap[Int, Int]
-    var baseMap = new mutable.HashMap[Int, Int]
 
     //csv파일에서 데이터 불러오기
-    var LineList = new ArrayBuffer[Array[String]]
     while (iter.hasNext) {
       LineList += iter.nextLine.split(",")
     }
-
     LineList.remove(0)
+    return LineList
+  }
 
-    LineList.foreach(x => {
-      reqMap.put(x(4).toInt, 0)
-      baseMap.put(x(4).toInt, 0)
+  def ArrayToLocation(arr: ArrayBuffer[Array[String]]): ArrayBuffer[Location] = {
+    var locationArr = new ArrayBuffer[Location]
+    arr.foreach(elem => {
+      var loc = new Location
+      loc.setUser(elem(0))
+      loc.setDate(elem(1).toDouble)
+      loc.setTime(elem(2).toInt)
+      loc.setWeek(elem(3).toInt)
+      loc.setX(elem(5).toDouble / 100)
+      loc.setY(elem(6).toDouble / 100)
+      locationArr += loc
     })
 
-
-    var reqList = new ArrayBuffer[Int]
-
-    if (reqTime <= 86400) {
-
-      var todayWeek = LineList.last(2)
-      LineList.foreach(data => {
-        if (data(2).equals(todayWeek)) {
-
-
-          if (data(1).toDouble > (LineList.last(1).toDouble - reqTime)) {
-            var key = data(4).toInt / 100
-            if (reqMap.contains(key)) {
-              var count: Int = reqMap.get(key).get
-              reqMap.put(key, count + 1)
-            } else {
-              reqMap.put(key, 1)
-            }
-          }
-
-
-          if (data(1).toDouble < (LineList.last(1).toDouble - reqTime)) {
-            if (data(1).toDouble > (LineList.last(1).toDouble - baseTime)) {
-              var key = data(4).toInt / 100
-              if (baseMap.contains(key)) {
-                var count: Int = baseMap.get(key).get
-                baseMap.put(key, count + 1)
-              } else {
-                baseMap.put(key, 1)
-              }
-            }
-          }
-          for (elem <- baseMap) {
-            baseMap.put(elem._1, elem._2 / (baseTime / reqTime).toInt)
-          }
-
-
-        }
-      })
-
-      for (elem <- reqMap) {
-        var base = 0
-        if (!baseMap.get(elem._1).isEmpty) {
-          base = baseMap.get(elem._1).get
-        }
-        var d = (elem._2 - base)
-        reqList += d
-      }
-
-
-      if (reqList.size > 30) {
-        //정규성 만족
-        var pv = st.tTest(reqList)
-        println(" 결과 ")
-        println(path + "  :  " + pv)
-        return pv
-      }
-      else {
-        println("미구현")
-        var pv = st.tTest(reqList)
-        println(" 결과 ")
-        println(path + "  :  " + pv)
-        return pv
-      }
-
-    }
-
-
-    else {
-      //요일개념이 없는 룰
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////
-      var todayWeek = LineList.last(2)
-      LineList.foreach(data => {
-
-
-        if (data(1).toDouble > (LineList.last(1).toDouble - reqTime)) {
-          var key = data(4).toInt / 100
-          if (reqMap.contains(key)) {
-            var count: Int = reqMap.get(key).get
-            reqMap.put(key, count + 1)
-          } else {
-            reqMap.put(key, 1)
-          }
-        }
-
-
-        if (data(1).toDouble < (LineList.last(1).toDouble - reqTime)) {
-          if (data(1).toDouble > (LineList.last(1).toDouble - baseTime)) {
-            var key = data(4).toInt / 100
-            if (baseMap.contains(key)) {
-              var count: Int = baseMap.get(key).get
-              baseMap.put(key, count + 1)
-            } else {
-              baseMap.put(key, 1)
-            }
-          }
-        }
-        for (elem <- baseMap) {
-          baseMap.put(elem._1, elem._2 /  (baseTime / reqTime).toInt)
-        }
-
-
-      }
-      )
-
-      for (elem <- reqMap) {
-
-        var base = 0
-        if (!baseMap.get(elem._1).isEmpty) {
-          base = baseMap.get(elem._1).get
-        }
-        var d = (elem._2 - base)
-        reqList += d
-      }
-
-
-      if (reqList.size > 30) {
-        //정규성 만족
-        var pv = st.tTest(reqList)
-        println(" 결과 ")
-        println(path + "  :  " + pv)
-        return pv
-      }
-      else {
-        println("미구현")
-        var pv = st.tTest(reqList)
-        println(" 결과 ")
-        println(path + "  :  " + pv)
-        return pv
-      }
-
-
-    }
+    return locationArr
   }
+
+  def getWeek(dateString: String): Int = {
+    var format = "yyyy-MM-dd HH:mm"
+
+    var df = new SimpleDateFormat(format)
+    var date = df.parse(dateString)
+
+    var cal = Calendar.getInstance()
+    cal.setTime(date)
+    var week = cal.get(Calendar.DAY_OF_WEEK)
+    var weekString = ""
+
+    return week
+  }
+}
+
 }

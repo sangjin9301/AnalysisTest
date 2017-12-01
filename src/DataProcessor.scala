@@ -4,6 +4,7 @@ import java.io.{BufferedReader, File, FileReader, FileWriter}
 import java.text.SimpleDateFormat
 import org.apache.commons.io.LineIterator
 import scala.collection.mutable.ArrayBuffer
+import scala.util._
 
 class DataProcessor {
   var cr = new CSVReader
@@ -74,7 +75,12 @@ class DataProcessor {
 
   def writerStolenLocationData(id: String, userList: ArrayBuffer[String], lastTime: String, reqTime:Int,  sb: StringBuilder): Unit =
     {
-      userList.foreach((other: String) => {
+      var someone = new ArrayBuffer[String]
+      for(i <- 0 to 4){
+        someone += userList(Random.nextInt(userList.size))
+      }
+
+      someone.foreach((other: String) => {
         var otherArray = cr.readLocationData(other)
         //타겟의 마지막 활동 시간보다 큰 데이터인지 확인.
         if (otherArray.last(1) > lastTime) {
@@ -124,7 +130,12 @@ class DataProcessor {
 
   def writerStolenCallLogData(id: String, userList: ArrayBuffer[String], lastTime: String, reqTime:Int,  sb: StringBuilder): Unit =
   {
-    userList.foreach((other: String) => {
+    var someone = new ArrayBuffer[String]
+    for(i <- 0 to 4){
+      someone += userList(Random.nextInt(userList.size))
+    }
+
+    someone.foreach((other: String) => {
       var otherArray = cr.readCDRData(other)
       //타겟의 마지막 활동 시간보다 큰 데이터인지 확인.
       if (otherArray.last(1) > lastTime) {

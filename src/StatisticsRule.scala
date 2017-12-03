@@ -4,6 +4,7 @@ import java.io.{BufferedReader, FileReader}
 
 import org.apache.commons.io.LineIterator
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.apache.commons.math3.exception.NumberIsTooSmallException
 import org.apache.commons.math3.stat.inference.TTest
 
 import scala.collection.mutable
@@ -17,20 +18,24 @@ class StatisticsRule {
   var baseTime: Double = 0
 
 
-  def tTest(reqArr: ArrayBuffer[Int]): (Boolean, Double) = {
-    var result: Boolean = false
+  def tTest(reqArr: ArrayBuffer[Double]): Boolean = {
     var mean: Double = 0
     var t_test = new TTest
     var list = new ArrayBuffer[Double]
     reqArr.foreach(x => {
-      list += x.toDouble
+      list += x
     })
 
-    var pv = t_test.tTest(mean, list.toArray)
+    var pv:Double = 0
+    try {
+      pv = t_test.tTest(mean, list.toArray)
+      println(pv)
+    }catch {
+      case e:NumberIsTooSmallException => {return true}
+    }
+    if (pv < 0.05) return true
 
-    if (pv < 0.05) result = true
-
-    return (result, pv)
+    return false
   }
 
 
@@ -58,5 +63,5 @@ class StatisticsRule {
     return score
   }
 
-//https://github.com/stkim123/kr.ac.jbnu.ssel.cwa/invitations
+  //https://github.com/stkim123/kr.ac.jbnu.ssel.cwa/invitations
 }

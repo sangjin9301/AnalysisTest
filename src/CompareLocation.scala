@@ -11,47 +11,86 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompareLocation {
 
-  def excute(path: String, reqTime: Double, baseTime: Double): (Boolean, Double) = {
+  def excute(path: String, reqTime: Double, baseTime: Double): Boolean = {
     var st = new StatisticsRule
     var reqMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
     var baseMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
+    var locationList = new ArrayBuffer[(Double,Double)]
     var LineList = this.getData(path)
     var locationArr = this.ArrayToLocation(LineList)
+    var last = locationArr.last.getDate
 
     //Map initialize
-    for (i <- 1 to 7) {
-      reqMap_List(i) = new mutable.HashMap[(Double, Double), Int]
+    for (i <- 0 to 6) {
+      reqMap_List += new mutable.HashMap[(Double, Double), Int]
+      baseMap_List += new mutable.HashMap[(Double, Double), Int]
     }
-
+    //0으로 초기화
     locationArr.foreach(loc => {
-      var value = reqMap_List(loc.getWeek).get((loc.getX,loc.getY)).get+1
-      reqMap_List(loc.getWeek).put((loc.getX,loc.getY),value)
+      reqMap_List(loc.getWeek-1).put((loc.getX,loc.getY), 0)
+      baseMap_List(loc.getWeek-1).put((loc.getX,loc.getY), 0)
+      if(!locationList.contains((loc.getX,loc.getY)))locationList += ((loc.getX,loc.getY))
     })
 
-    //    mkRequest(locationArr, reqTime, reqMap_List)
-    //    mkBase(locationArr, reqTime, baseTime, baseMap_List)
-
-  }
-
-  def mkRequest(locList: ArrayBuffer[Location], reqTime: Double, reqMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
-    var lastDate = locList.last.getDate
-    var term = lastDate - reqTime
-    for (target <- locList) {
-      if ((target.getDate < lastDate) && (target.getDate > term)) {
-        var increase: Int = reqMap_List.get((target.getX, target.getY)).get + 1
-        reqMap_List.put((target.getX, target.getY), increase)
+    //요일별(1~7)맵에 데이터를 삽입
+    locationArr.foreach(loc => {
+      if(loc.getDate<last){
+        if(loc.getDate>last-reqTime){
+          var value = reqMap_List(loc.getWeek-1).get((loc.getX,loc.getY)).get+1
+          reqMap_List(loc.getWeek-1).put((loc.getX,loc.getY),value)
+        }
       }
+
+      if(loc.getDate<last-reqTime){
+        var value = baseMap_List(loc.getWeek-1).get((loc.getX,loc.getY)).get+1
+        baseMap_List(loc.getWeek-1).put((loc.getX,loc.getY),value)
+      }
+    })
+
+
+    var result = new ArrayBuffer[Boolean]
+    var resultValue:Boolean = false
+    for(i <- 0 to 6) {
+      var target_Req_Map = reqMap_List(i)
+      var target_Base_Map = baseMap_List(i)
+      var ArrayForRuleExcute = new ArrayBuffer[Double]
+      locationList.foreach(x => {
+        try {
+          var data = ((target_Base_Map.get(x).get / (baseTime / reqTime)) - target_Req_Map.get(x).get)
+          ArrayForRuleExcute += data
+        }catch {
+          case e:NoSuchElementException => {}
+        }
+      })
+      result += st.tTest(ArrayForRuleExcute)
     }
+    var count = 0
+    result.foreach(x=>{
+      if(x.equals(1))count+=1
+    })
+    if(count>=4) resultValue = true
+    return resultValue
   }
 
-  def mkBase(locList: ArrayBuffer[Location], reqTime: Double, baseTime: Double, baseMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
-    var lastDate = locList.last.getDate
-    var term = lastDate - reqTime
-    for (target <- locList) {
-      if ((target.getDate < term)) {
-      }
-    }
-  }
+//  def mkRequest(locList: ArrayBuffer[Location], reqTime: Double, reqMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
+//    var lastDate = locList.last.getDate
+//    var term = lastDate - reqTime
+//    for (target <- locList) {
+//      if ((target.getDate < lastDate) && (target.getDate > term)) {
+//        var increase: Int = reqMap_List.get((target.getX, target.getY)).get + 1
+//        reqMap_List.put((target.getX, target.getY), increase)
+//      }
+//    }
+//  }
+//
+//  def mkBase(locList: ArrayBuffer[Location], reqTime: Double, baseTime: Double, baseMap_List: ArrayBuffer[mutable.HashMap[(Double, Double), Int]]): Unit = {
+//    var lastDate = locList.last.getDate
+//    var term = lastDate - reqTime
+//    for (target <- locList) {
+//      if ((target.getDate < term)) {
+//      }
+//    }
+//  }
 
   def getData(path: String): ArrayBuffer[Array[String]] = {
     var LineList = new ArrayBuffer[Array[String]]
@@ -70,14 +109,18 @@ class CompareLocation {
   def ArrayToLocation(arr: ArrayBuffer[Array[String]]): ArrayBuffer[Location] = {
     var locationArr = new ArrayBuffer[Location]
     arr.foreach(elem => {
-      var loc = new Location
-      loc.setUser(elem(0))
-      loc.setDate(elem(1).toDouble)
-      loc.setTime(elem(2).toInt)
-      loc.setWeek(elem(3).toInt)
-      loc.setX(elem(5).toDouble / 100)
-      loc.setY(elem(6).toDouble / 100)
-      locationArr += loc
+
+      try {
+        var loc = new Location
+        loc.setUser(elem(0))
+        loc.setDate(elem(1).toDouble)
+        loc.setTime(elem(2).toInt)
+        loc.setWeek(elem(3).toInt)
+        loc.setX(elem(5).toDouble / 5000)
+        loc.setY(elem(6).toDouble / 5000)
+        locationArr += loc
+      }catch{case e:ArrayIndexOutOfBoundsException => {}}
+
     })
 
     return locationArr
@@ -98,4 +141,3 @@ class CompareLocation {
   }
 }
 
-}

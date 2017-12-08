@@ -91,9 +91,12 @@ class StatisticsRule {
     mean = sum / n
 
     var score:Double = 0
-
-    if(base_normDist.getMean > mean) score = base_normDist.probability(mean,base_normDist.getMean).toDouble
-    if(base_normDist.getMean < mean) score = base_normDist.probability(base_normDist.getMean,mean).toDouble
+    var prob:Double = 0
+    if(base_normDist.probability(-100000000,mean)>0.5) prob = base_normDist.probability(-100000000,mean)-0.5
+    else prob = 0.5-base_normDist.probability(-100000000,mean) //base와 req 사이의 거리
+    score = (2*prob)
+//    if(base_normDist.getMean > mean) score = base_normDist.probability(mean,base_normDist.getMean).toDouble
+//    if(base_normDist.getMean < mean) score = base_normDist.probability(base_normDist.getMean,mean).toDouble
 
 //    var base_sum:Double = 0
 //    var base_m:Double = 0

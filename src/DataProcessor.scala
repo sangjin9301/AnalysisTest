@@ -42,33 +42,35 @@ class DataProcessor {
   }
 
   def mkStolenCallLogData(userList: ArrayBuffer[String]): Unit = {
+    try {
+      var bufReader: BufferedReader = null;
+      //한 명의 데이터에 대해
+      userList.foreach((id: String) => {
+        var readCallLogPath = callLogPath + id + "/original/" + id + ".csv"
+        bufReader = new BufferedReader(new FileReader(readCallLogPath))
+        val iter = new LineIterator(bufReader)
+        var LineList = new ArrayBuffer[Array[String]]
+        var line: String = ""
 
-    var bufReader: BufferedReader = null;
-    //한 명의 데이터에 대해
-    userList.foreach((id: String) => {
-      var readCallLogPath = callLogPath + id + "/original/" + id + ".csv"
-      bufReader = new BufferedReader(new FileReader(readCallLogPath))
-      val iter = new LineIterator(bufReader)
-      var LineList = new ArrayBuffer[Array[String]]
-      var line: String = ""
+        var sb = new StringBuilder
 
-      var sb = new StringBuilder
+        while (iter.hasNext) {
+          //새로 쓰일 문자열을 채움.
+          line = iter.nextLine
+          sb.append(line)
+          sb.append("\n")
+          LineList += line.split(",")
+        }
+        var lastTime = LineList.last(1)
 
-      while (iter.hasNext) {
-        //새로 쓰일 문자열을 채움.
-        line = iter.nextLine
-        sb.append(line)
-        sb.append("\n")
-        LineList += line.split(",")
-      }
-      var lastTime = LineList.last(1)
+        writerStolenCallLogData(id, userList, lastTime, 21600, sb) //6시간
+        writerStolenCallLogData(id, userList, lastTime, 86400, sb) //1일
+        writerStolenCallLogData(id, userList, lastTime, 604800, sb) //1주일
 
-      writerStolenCallLogData(id, userList, lastTime, 21600, sb) //6시간
-      writerStolenCallLogData(id, userList, lastTime, 86400, sb) //1일
-      writerStolenCallLogData(id, userList, lastTime, 604800, sb) //1주일
-
-    })
-
+      })
+    } catch {
+      case e: NoSuchElementException => {}
+    }
   }
 
   def writerStolenLocationData(id: String, userList: ArrayBuffer[String], lastTime: String, reqTime: Int, sb: StringBuilder): Unit = {
@@ -130,9 +132,10 @@ class DataProcessor {
 
   def writerStolenCallLogData(id: String, userList: ArrayBuffer[String], lastTime: String, reqTime: Int, sb: StringBuilder): Unit = {
     var someone = new ArrayBuffer[String]
-    for (i <- 0 to 4) {
-      someone += userList(Random.nextInt(userList.size))
-    }
+    userList.foreach(someone += _)
+    //    for (i <- 0 to 4) {
+    //      someone += userList(Random.nextInt(userList.size))
+    //    }
 
     someone.foreach((other: String) => {
       var otherArray = cr.readCDRData(other)
@@ -154,6 +157,8 @@ class DataProcessor {
                 newsb.append(elm(3))
                 newsb.append(",")
                 newsb.append(elm(4))
+                newsb.append(",")
+                newsb.append(elm(5))
                 newsb.append("\n")
               }
 

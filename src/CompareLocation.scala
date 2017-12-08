@@ -11,7 +11,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompareLocation {
 
-  def excute(path: String, reqTime: Double, baseTime: Double): Boolean = {
+  def excute(path: String, reqTime: Double, baseTime: Double): Double = {
     var st = new StatisticsRule
     var reqMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
     var baseMap_List = new ArrayBuffer[mutable.HashMap[(Double, Double), Int]]
@@ -48,27 +48,31 @@ class CompareLocation {
     })
 
 
-    var result = new ArrayBuffer[Boolean]
-    var resultValue:Boolean = false
+    var result = new ArrayBuffer[Double]
+    var resultValue:Double = 0
     for(i <- 0 to 6) {
       var target_Req_Map = reqMap_List(i)
       var target_Base_Map = baseMap_List(i)
-      var ArrayForRuleExcute = new ArrayBuffer[Double]
+      var reqList = new ArrayBuffer[Double]
+      var baseList = new ArrayBuffer[Double]
       locationList.foreach(x => {
         try {
-          var data = ((target_Base_Map.get(x).get / (baseTime / reqTime)) - target_Req_Map.get(x).get)
-          ArrayForRuleExcute += data
+          target_Base_Map.put(x,(target_Base_Map.get(x).get / (baseTime / reqTime)).toInt)
+          reqList +=  target_Req_Map.get(x).get
+          baseList += target_Base_Map.get(x).get
         }catch {
           case e:NoSuchElementException => {}
         }
       })
-      result += st.tTest(ArrayForRuleExcute)
+      result += st.zTest(reqList,baseList)
     }
-    var count = 0
+    var sum:Double = 0
     result.foreach(x=>{
-      if(x.equals(1))count+=1
+      sum += x
     })
-    if(count>=4) resultValue = true
+    //평균을 반환
+    resultValue = sum/result.size
+    println(path+"  ::  "+resultValue)
     return resultValue
   }
 

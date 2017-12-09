@@ -62,6 +62,10 @@ class StatisticsRule {
     return returnValue
   }
 
+  def make_NormDist(freq:Double):NormalDistribution = {
+    return new NormalDistribution(freq,1)
+  }
+
   def make_Z(arr:ArrayBuffer[Double], base_m:Double):Double = {
     var sum: Double = 0
     var mean: Double = 0
@@ -83,32 +87,30 @@ class StatisticsRule {
 
 
   def zTest(req_arr: ArrayBuffer[Double], base_arr: ArrayBuffer[Double]): Double = {
-    var base_normDist = make_NormDist(base_arr)
-    var sum: Double = 0
-    var mean: Double = 0
-    var n:Double  = req_arr.size
-    req_arr.foreach( sum += _ )
-    mean = sum / n
-
     var score:Double = 0
-    var prob:Double = 0
-    if(base_normDist.probability(-100000000,mean)>0.5) prob = base_normDist.probability(-100000000,mean)-0.5
-    else prob = 0.5-base_normDist.probability(-100000000,mean) //base와 req 사이의 거리
-    score = (2*prob)
+    var sum:Double = 0
+
+    for(i <- 0 to req_arr.size-1){
+      var req_mean = req_arr(i)
+      var nd = make_NormDist(base_arr(i))
+      if(nd.getMean > req_mean) score = nd.probability(req_mean,nd.getMean)*2
+      if(nd.getMean < req_mean) score = nd.probability(nd.getMean,req_mean)*2
+      score = 1-score
+
+      sum += score
+    }
+    return sum/req_arr.size
+//    var base_normDist = make_NormDist(base_arr)
+//    var sum: Double = 0
+//    var mean: Double = 0
+//    var n:Double  = req_arr.size
+//    req_arr.foreach( sum += _ )
+//    mean = sum / n
+
 //    if(base_normDist.getMean > mean) score = base_normDist.probability(mean,base_normDist.getMean).toDouble
 //    if(base_normDist.getMean < mean) score = base_normDist.probability(base_normDist.getMean,mean).toDouble
-
-//    var base_sum:Double = 0
-//    var base_m:Double = 0
-//    base_arr.foreach( base_sum += _ )
-//    base_m = base_sum / base_arr.size
-//    var requset_Z = make_Z(req_arr,base_m)
 //
-//    var score:Double = 0
-//    val dnst = base_normDist.density(requset_Z)
-//    score = (1 - (0.5 - base_normDist.density(requset_Z)))
-//    println("score  ::  "+dnst.toInt)
-    return 1-score
+//    return 1-(score*2)
   }
 
   //https://github.com/stkim123/kr.ac.jbnu.ssel.cwa/invitations

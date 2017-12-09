@@ -122,7 +122,7 @@ object Test {
 
 
   def main(args: Array[String]): Unit = {
-//            cdrEvaluation
+            cdrEvaluation
             locationEvaluation
 //    var locationPath: String = this.getClass.getResource(".").getPath.replace("src", "location")
 //    var callLogPath: String = this.getClass.getResource(".").getPath.replace("src", "calllog")
